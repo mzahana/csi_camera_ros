@@ -1,0 +1,22 @@
+<launch>
+    <!--
+        This launch files runs the CSI camera node and sets its parameters
+        Author: Mohamed Abdelkader, mohamedashraf123@gmail.com
+    -->
+
+    <arg name="camID" default="0"/> <!-- CSI port number -->
+    <arg name="imgW" default="800"/> <!-- Image width-->
+    <arg name="imgH" default="600"/> <!-- Image height-->
+    <arg  name="fps" default="30.0"/> <!-- Desired image frequency. Limited by sensor capabilities -->
+
+    <node pkg="csi_cam_ros" type="csi_node.py" name="csi_camera_node" output="screen">
+        <param name="camID" value="$(arg camID)"/>
+        <param name="imgW" value="$(arg imgW)"/>
+        <param name="imgH" value="$(arg imgH)"/>
+        <param name="fps" value="$(arg fps)"/>
+        <param name="imgTopic" value="csi_camera/image_raw"/>
+        <param name="camInfoTopic" value="csi_camera/camera_info"/>
+
+    </node>
+
+</launch>
