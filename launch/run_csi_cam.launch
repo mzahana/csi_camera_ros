@@ -4,20 +4,20 @@
         Author: Mohamed Abdelkader, mohamedashraf123@gmail.com
     -->
 
-    <arg name="camID" default="0"/> <!-- CSI port number -->
-    <arg name="imgW" default="1024"/> <!-- Image width-->
-    <arg name="imgH" default="576"/> <!-- Image height-->
-    <arg name="fps" default="30.0"/> <!-- Desired image frequency. Limited by sensor capabilities -->
-    <arg name="calibration_file" default="$(find csi_camera_ros)/config/rpi_camV2.yaml"/>
+    <arg name="camID"			default="0"/> <!-- CSI port number -->
+    <arg name="imgW"			default="1280"/> <!-- Image width-->
+    <arg name="imgH"			default="720"/> <!-- Image height-->
+    <arg name="fps"			default="60.0"/> <!-- Desired image frequency. Limited by sensor capabilities -->
+    <arg name="calibration_file"	default="" />
 
     <node pkg="csi_cam_ros" type="csi_node.py" name="csi_camera_node" output="screen">
-        <param name="camID" value="$(arg camID)"/>
-        <param name="imgW" value="$(arg imgW)"/>
-        <param name="imgH" value="$(arg imgH)"/>
-        <param name="fps" value="$(arg fps)"/>
-        <param name="imgTopic" value="csi_camera/image_raw"/>
-        <param name="camInfoTopic" value="csi_camera/camera_info"/>
-        <param name="calibration_file"  value="$(arg calibration_file)"/>
+        <param name="camID"		value="$(arg camID)"/>
+        <param name="imgW"		value="$(arg imgW)"/>
+        <param name="imgH"		value="$(arg imgH)"/>
+        <param name="fps"		value="$(arg fps)"/>
+        <param name="imgTopic" 		value="csi_camera/image_raw"/>
+        <param name="camInfoTopic"	value="csi_camera/camera_info"/>
+        <param name="calibration_file"	value="$(arg calibration_file)"/>
     </node>
 
 </launch>

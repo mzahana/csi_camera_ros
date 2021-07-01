@@ -45,18 +45,16 @@ class CSICam:
         # Camera/sensor ID. Used in gstreamer
         self._camID = rospy.get_param('~camID', 0)
         # Output image width
-        self._imgW = rospy.get_param('~imgW', 800)
+        self._imgW = rospy.get_param('~imgW', 1280)
         # Output image height
-        self._imgH = rospy.get_param('~imgH', 600)
+        self._imgH = rospy.get_param('~imgH', 720)
         
         # Show OpenCV image for debugging
         self._showImg=rospy.get_param('~showImg', False)
 
         # Image publication frequency
         self._fps = rospy.get_param('~fps', 30.0)
-        if (self._fps > 60.0):
-            rospy.logwarn("Image publication frequency is capped at 60 Hz\n")
-            self._fps=60.0
+
         self._rosRate = rospy.Rate(self._fps)
 
         # Desired image topic name
@@ -74,12 +72,15 @@ class CSICam:
 
         # Calibration file
         self._yaml_fname = rospy.get_param('~calibration_file', "")
+        print("Yaml file name: {}".format(self._yaml_fname))
         self._camera_info_msg = self.yaml2CameraInfo(self._yaml_fname)
 
         self._cvBridge = CvBridge()
 
-
-        self._camSet='nvarguscamerasrc sensor-id='+str(self._camID)+' ! video/x-raw(memory:NVMM), width=3264, height=2464, framerate=21/1, format=NV12 ! nvvidconv flip-method=2 ! video/x-raw, width='+str(self._imgW)+', height='+str(self._imgH)+', format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink'
+        # possible resolutions
+        # 3264 x 2464 @ 21fps
+        # 1280 x 720 @ 60fps
+        self._camSet='nvarguscamerasrc sensor-id='+str(self._camID)+' ! video/x-raw(memory:NVMM), width=1280, height=720, framerate=60/1, format=NV12 ! nvvidconv flip-method=2 ! video/x-raw, width='+str(self._imgW)+', height='+str(self._imgH)+', format=BGRx ! videoconvert ! video/x-raw, format=BGR ! appsink'
         try:
             self._camObj=cv2.VideoCapture(self._camSet)
         except:
@@ -110,8 +111,8 @@ class CSICam:
         try:
             with open(self._yaml_fname, "r") as file_handle:
                 calib_data = yaml.load(file_handle)
-        except:
-            rospy.logwarn("Couldn't find calibration file\n")
+        except Exception as e:
+            rospy.logwarn("Couldn't find calibration file: %s", e)
             return CameraInfo()
 
         # Parse
@@ -152,7 +153,7 @@ class CSICam:
                 if cv2.waitKey(1) == ord('q'):
                     break
 
-            self._rosRate.sleep()
+            #self._rosRate.sleep()
         rospy.logwarn("Shutting down CSI node\n")
         self._camObj.release()
         cv2.destroyAllWindows()
