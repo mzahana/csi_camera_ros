@@ -35,8 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import cv2
 import rospy
-from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+import time
+import yaml
+from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import Image, CameraInfo
 
 class CSICam:
     def __init__(self):
@@ -48,7 +50,7 @@ class CSICam:
         self._imgH = rospy.get_param('~imgH', 600)
         
         # Show OpenCV image for debugging
-        self._showImg=rospy.get_param('showImg', False)
+        self._showImg=rospy.get_param('~showImg', False)
 
         # Image publication frequency
         self._fps = rospy.get_param('~fps', 30.0)
@@ -65,7 +67,14 @@ class CSICam:
         # Image ROS publisher
         self._imgPub = rospy.Publisher(self._imgTopic, Image)
 
-        # TODO Get camera intrinsic params
+        # Camera Info ROS publisher
+        self._camInfoPub = rospy.Publisher(self._camInfoTopic, CameraInfo, queue_size=1)
+        self._camInfoPubRate = 5.0 # Hz
+        self._camInfoTriggerTime = 0.0 # Used to publish camInfo at desired frequency
+
+        # Calibration file
+        self._yaml_fname = rospy.get_param('~calibration_file', "")
+        self._camera_info_msg = self.yaml2CameraInfo(self._yaml_fname)
 
         self._cvBridge = CvBridge()
 
@@ -80,6 +89,42 @@ class CSICam:
             rospy.logerr("Cannot open CSI camera\n")
             exit()
 
+    def yaml2CameraInfo(self, yaml_fname):
+        """
+        Parse a yaml file containing camera calibration data (as produced by 
+        rosrun camera_calibration cameracalibrator.py) into a 
+        sensor_msgs/CameraInfo msg.
+
+        Parameters
+        ----------
+        @param yaml_fname : str
+        Path to yaml file containing camera calibration data
+
+        Returns
+        -------
+        @param camera_info_msg : sensor_msgs.msg.CameraInfo
+        A sensor_msgs.msg.CameraInfo message containing the camera calibration
+        data
+        """
+        # Load data from file
+        try:
+            with open(self._yaml_fname, "r") as file_handle:
+                calib_data = yaml.load(file_handle)
+        except:
+            rospy.logwarn("Couldn't find calibration file\n")
+            return CameraInfo()
+
+        # Parse
+        camera_info_msg = CameraInfo()
+        camera_info_msg.width = calib_data["image_width"]
+        camera_info_msg.height = calib_data["image_height"]
+        camera_info_msg.K = calib_data["camera_matrix"]["data"]
+        camera_info_msg.D = calib_data["distortion_coefficients"]["data"]
+        camera_info_msg.R = calib_data["rectification_matrix"]["data"]
+        camera_info_msg.P = calib_data["projection_matrix"]["data"]
+        camera_info_msg.distortion_model = calib_data["distortion_model"]
+        return camera_info_msg
+
 
     def loop(self):
         while not rospy.is_shutdown():
@@ -93,8 +138,15 @@ class CSICam:
             try:
                 self._imgPub.publish(self._cvBridge.cv2_to_imgmsg(cv_image, "bgr8"))
             except CvBridgeError as e:
-                print(e)
-            # SHow image, if desired (for debugging only)
+                rospy.logerr_throttle(1, "Error in CvBridge: %s", e)
+
+            # Publish camera info
+            dt = time.time() - self._camInfoTriggerTime
+            if ( dt > 1.0/self._camInfoPubRate):
+                self._camInfoTriggerTime = time.time()
+                self._camInfoPub.publish(self._camera_info_msg)
+
+            # Show image, if desired (for debugging only)
             if (self._showImg):
                 cv2.imshow('frame', cv_image)
                 if cv2.waitKey(1) == ord('q'):
