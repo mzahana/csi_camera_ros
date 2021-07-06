@@ -61,6 +61,8 @@ class CSICam:
         self._imgTopic = rospy.get_param('~imgTopic', 'csi_camera/image_raw')
         # Desired cameraInfo topic name
         self._camInfoTopic = rospy.get_param('~camInfoTopic', 'csi_camera/camera_info')
+        # Camera fram name
+        self._camFrameName = rospy.get_param('~camFrameName', 'csi_camera_link')
 
         # Image ROS publisher
         self._imgPub = rospy.Publisher(self._imgTopic, Image)
@@ -137,15 +139,21 @@ class CSICam:
                 break
             # publish ROS image
             try:
-                self._imgPub.publish(self._cvBridge.cv2_to_imgmsg(cv_image, "bgr8"))
+                imgMsg = self._cvBridge.cv2_to_imgmsg(cv_image, "bgr8")
+                imgMsg.header.stamp=rospy.Time.now()
+                imgMsg.header.frame_id=self._camFrameName
+                self._imgPub.publish(imgMsg)
+
+                dt = time.time() - self._camInfoTriggerTime
+                if ( dt > 1.0/self._camInfoPubRate):
+                    self._camInfoTriggerTime = time.time()
+                    self._camera_info_msg.header=imgMsg.header
+                    self._camInfoPub.publish(self._camera_info_msg)
             except CvBridgeError as e:
                 rospy.logerr_throttle(1, "Error in CvBridge: %s", e)
 
             # Publish camera info
-            dt = time.time() - self._camInfoTriggerTime
-            if ( dt > 1.0/self._camInfoPubRate):
-                self._camInfoTriggerTime = time.time()
-                self._camInfoPub.publish(self._camera_info_msg)
+            
 
             # Show image, if desired (for debugging only)
             if (self._showImg):

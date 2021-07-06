@@ -11,12 +11,13 @@
     <arg name="calibration_file"	default="" />
 
     <node pkg="csi_cam_ros" type="csi_node.py" name="csi_camera_node" output="screen">
-        <param name="camID"		value="$(arg camID)"/>
-        <param name="imgW"		value="$(arg imgW)"/>
-        <param name="imgH"		value="$(arg imgH)"/>
-        <param name="fps"		value="$(arg fps)"/>
-        <param name="imgTopic" 		value="csi_camera/image_raw"/>
-        <param name="camInfoTopic"	value="csi_camera/camera_info"/>
+        <param name="camID"		        value="$(arg camID)"/>
+        <param name="imgW"		        value="$(arg imgW)"/>
+        <param name="imgH"		        value="$(arg imgH)"/>
+        <param name="fps"		        value="$(arg fps)"/>
+        <param name="imgTopic" 		    value="csi_camera/image_raw"/>
+        <param name="camInfoTopic"	    value="csi_camera/camera_info"/>
+        <param name="camFrameName"      value="csi_camera_link"/>
         <param name="calibration_file"	value="$(arg calibration_file)"/>
     </node>
 
