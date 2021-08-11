@@ -144,11 +144,9 @@ class CSICam:
                 imgMsg.header.frame_id=self._camFrameName
                 self._imgPub.publish(imgMsg)
 
-                dt = time.time() - self._camInfoTriggerTime
-                if ( dt > 1.0/self._camInfoPubRate):
-                    self._camInfoTriggerTime = time.time()
-                    self._camera_info_msg.header=imgMsg.header
-                    self._camInfoPub.publish(self._camera_info_msg)
+                # Publish camera info
+                self._camera_info_msg.header=imgMsg.header
+                self._camInfoPub.publish(self._camera_info_msg)
             except CvBridgeError as e:
                 rospy.logerr_throttle(1, "Error in CvBridge: %s", e)
 
